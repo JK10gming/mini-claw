@@ -25,6 +25,10 @@ describe("pi-runner", () => {
 		sessionDir: "/mock/sessions",
 		thinkingLevel: "low",
 		allowedUsers: [],
+		rateLimitCooldownMs: 5000,
+		piTimeoutMs: 300000,
+		shellTimeoutMs: 60000,
+		sessionTitleTimeoutMs: 10000,
 	};
 
 	function createMockProcess(): ChildProcess & EventEmitter {

@@ -10,6 +10,9 @@ const mockRename = vi.fn();
 const mockRm = vi.fn();
 const mockStat = vi.fn();
 const mockSpawn = vi.fn();
+const mockCopyFile = vi.fn();
+const mockMkdir = vi.fn();
+const mockWriteFile = vi.fn();
 
 vi.mock("node:fs/promises", () => ({
 	readdir: (...args: unknown[]) => mockReaddir(...args),
@@ -17,6 +20,9 @@ vi.mock("node:fs/promises", () => ({
 	rename: (...args: unknown[]) => mockRename(...args),
 	rm: (...args: unknown[]) => mockRm(...args),
 	stat: (...args: unknown[]) => mockStat(...args),
+	copyFile: (...args: unknown[]) => mockCopyFile(...args),
+	mkdir: (...args: unknown[]) => mockMkdir(...args),
+	writeFile: (...args: unknown[]) => mockWriteFile(...args),
 }));
 
 vi.mock("node:child_process", () => ({
@@ -32,6 +38,10 @@ const {
 	formatSessionAge,
 	formatFileSize,
 	generateSessionTitle,
+	getDefaultSessionFilename,
+	getActiveSessionFilename,
+	switchSession,
+	resetActiveSessionsForTesting,
 } = await import("./sessions.js");
 
 describe("sessions", () => {
@@ -41,11 +51,16 @@ describe("sessions", () => {
 		sessionDir: "/mock/sessions",
 		thinkingLevel: "low",
 		allowedUsers: [],
+		rateLimitCooldownMs: 5000,
+		piTimeoutMs: 300000,
+		shellTimeoutMs: 60000,
+		sessionTitleTimeoutMs: 10000,
 	};
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.useFakeTimers();
+		resetActiveSessionsForTesting();
 	});
 
 	afterEach(() => {
@@ -616,6 +631,93 @@ describe("sessions", () => {
 
 		it("should handle 1023 bytes (just under 1KB)", () => {
 			expect(formatFileSize(1023)).toBe("1023B");
+		});
+	});
+
+	describe("getDefaultSessionFilename", () => {
+		it("should return telegram-<chatId>.jsonl format", () => {
+			expect(getDefaultSessionFilename(123)).toBe("telegram-123.jsonl");
+		});
+
+		it("should handle negative chat IDs", () => {
+			expect(getDefaultSessionFilename(-100123)).toBe("telegram--100123.jsonl");
+		});
+	});
+
+	describe("getActiveSessionFilename", () => {
+		it("should return default filename when no active session set", async () => {
+			mockReadFile.mockRejectedValue(new Error("ENOENT"));
+
+			const filename = await getActiveSessionFilename(123);
+			expect(filename).toBe("telegram-123.jsonl");
+		});
+	});
+
+	describe("switchSession", () => {
+		it("should throw error when target session does not exist", async () => {
+			mockReadFile.mockRejectedValue(new Error("ENOENT"));
+			mockStat.mockRejectedValue(new Error("ENOENT"));
+
+			await expect(
+				switchSession(mockConfig, 123, "nonexistent.jsonl"),
+			).rejects.toThrow("Session not found: nonexistent.jsonl");
+		});
+
+		it("should copy target session to default path", async () => {
+			mockReadFile.mockRejectedValue(new Error("ENOENT")); // No active sessions file
+			mockStat.mockImplementation((path: string) => {
+				if (path.includes("target-session")) {
+					return Promise.resolve({ size: 1024, mtime: new Date() });
+				}
+				if (path.includes("telegram-123.jsonl")) {
+					return Promise.reject(new Error("ENOENT")); // No current session
+				}
+				return Promise.resolve({ size: 1024, mtime: new Date() });
+			});
+			mockCopyFile.mockResolvedValue(undefined);
+			mockMkdir.mockResolvedValue(undefined);
+			mockWriteFile.mockResolvedValue(undefined);
+
+			await switchSession(mockConfig, 123, "target-session.jsonl");
+
+			expect(mockCopyFile).toHaveBeenCalledWith(
+				"/mock/sessions/target-session.jsonl",
+				"/mock/sessions/telegram-123.jsonl",
+			);
+		});
+
+		it("should archive current session when switching from default", async () => {
+			mockReadFile.mockRejectedValue(new Error("ENOENT")); // No active sessions file
+			// Target exists, current default exists
+			mockStat.mockResolvedValue({ size: 1024, mtime: new Date() });
+			mockRename.mockResolvedValue(undefined);
+			mockCopyFile.mockResolvedValue(undefined);
+			mockMkdir.mockResolvedValue(undefined);
+			mockWriteFile.mockResolvedValue(undefined);
+
+			vi.setSystemTime(new Date("2024-01-15T12:30:45.678Z"));
+
+			await switchSession(mockConfig, 123, "target-session.jsonl");
+
+			// Should archive the current session
+			expect(mockRename).toHaveBeenCalledWith(
+				"/mock/sessions/telegram-123.jsonl",
+				"/mock/sessions/telegram-123-2024-01-15T12-30-45-678Z.jsonl",
+			);
+		});
+
+		it("should not switch when already on target session", async () => {
+			// Mock that the active session is already the target
+			mockReadFile.mockResolvedValue(
+				JSON.stringify({ "123": "target-session.jsonl" }),
+			);
+			mockStat.mockResolvedValue({ size: 1024, mtime: new Date() });
+
+			await switchSession(mockConfig, 123, "target-session.jsonl");
+
+			// Should not copy or rename anything
+			expect(mockCopyFile).not.toHaveBeenCalled();
+			expect(mockRename).not.toHaveBeenCalled();
 		});
 	});
 });

@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
-import { Bot, InlineKeyboard } from "grammy";
+import { Bot, InlineKeyboard, InputFile } from "grammy";
 import type { Config } from "./config.js";
+import { detectFiles, snapshotWorkspace } from "./file-detector.js";
 import { checkPiAuth, runPi } from "./pi-runner.js";
+import { checkRateLimit } from "./rate-limiter.js";
 import {
 	archiveSession,
 	cleanupOldSessions,
@@ -9,6 +11,7 @@ import {
 	formatSessionAge,
 	generateSessionTitle,
 	listSessions,
+	switchSession,
 } from "./sessions.js";
 import { formatPath, getWorkspace, setWorkspace } from "./workspace.js";
 
@@ -18,7 +21,11 @@ interface ShellResult {
 	code: number | null;
 }
 
-async function runShell(cmd: string, cwd: string): Promise<ShellResult> {
+async function runShell(
+	cmd: string,
+	cwd: string,
+	timeoutMs: number,
+): Promise<ShellResult> {
 	return new Promise((resolve) => {
 		const proc = spawn("bash", ["-c", cmd], {
 			cwd,
@@ -45,11 +52,10 @@ async function runShell(cmd: string, cwd: string): Promise<ShellResult> {
 			resolve({ stdout: "", stderr: err.message, code: 1 });
 		});
 
-		// Timeout after 60 seconds
 		setTimeout(() => {
 			proc.kill("SIGTERM");
-			resolve({ stdout, stderr: stderr + "\n(timeout)", code: 124 });
-		}, 60 * 1000);
+			resolve({ stdout, stderr: `${stderr}\n(timeout)`, code: 124 });
+		}, timeoutMs);
 	});
 }
 
@@ -244,14 +250,14 @@ Send any message to chat with AI.`,
 		await ctx.replyWithChatAction("typing");
 
 		try {
-			const result = await runShell(cmd, cwd);
+			const result = await runShell(cmd, cwd, config.shellTimeoutMs);
 
 			let output = "";
 			if (result.stdout) {
 				output += result.stdout;
 			}
 			if (result.stderr) {
-				output += (output ? "\n" : "") + `stderr: ${result.stderr}`;
+				output += `${output ? "\n" : ""}stderr: ${result.stderr}`;
 			}
 			if (!output) {
 				output = "(no output)";
@@ -287,7 +293,10 @@ Send any message to chat with AI.`,
 		// Generate titles for sessions (in parallel, max 5)
 		const sessionsWithTitles = await Promise.all(
 			sessions.slice(0, 10).map(async (session) => {
-				const title = await generateSessionTitle(session.path);
+				const title = await generateSessionTitle(
+					session.path,
+					config.sessionTitleTimeoutMs,
+				);
 				return { ...session, title };
 			}),
 		);
@@ -316,14 +325,24 @@ Send any message to chat with AI.`,
 	// Handle callback queries for session buttons
 	bot.callbackQuery(/^session:load:(.+)$/, async (ctx) => {
 		const filename = ctx.match[1];
-		// For now, just acknowledge - full implementation would switch session
-		await ctx.answerCallbackQuery({
-			text: `Selected: ${filename}`,
-			show_alert: true,
-		});
-		await ctx.editMessageText(
-			`Selected session: ${filename}\n\n(Session switching coming soon)`,
-		);
+		const chatId = ctx.chat?.id;
+
+		if (!chatId) {
+			await ctx.answerCallbackQuery({ text: "Error: No chat ID" });
+			return;
+		}
+
+		try {
+			await switchSession(config, chatId, filename);
+			await ctx.answerCallbackQuery({ text: "Session switched!" });
+			await ctx.editMessageText(`✅ Switched to session: ${filename}`);
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : "Unknown error";
+			await ctx.answerCallbackQuery({
+				text: `Error: ${msg}`,
+				show_alert: true,
+			});
+		}
 	});
 
 	bot.callbackQuery("session:cleanup", async (ctx) => {
@@ -346,8 +365,21 @@ Send any message to chat with AI.`,
 			return;
 		}
 
+		// Rate limiting check
+		const rateLimit = checkRateLimit(chatId, config.rateLimitCooldownMs);
+		if (!rateLimit.allowed) {
+			const seconds = Math.ceil((rateLimit.retryAfterMs || 0) / 1000);
+			await ctx.reply(
+				`⏳ Please wait ${seconds}s before sending another message.`,
+			);
+			return;
+		}
+
 		// Get current workspace for this chat
 		const workspace = await getWorkspace(chatId);
+
+		// Snapshot workspace before Pi execution
+		const beforeSnapshot = await snapshotWorkspace(workspace);
 
 		// Show typing indicator
 		await ctx.replyWithChatAction("typing");
@@ -372,6 +404,30 @@ Send any message to chat with AI.`,
 				const chunks = splitMessage(result.output.trim());
 				for (const chunk of chunks) {
 					await ctx.reply(chunk);
+				}
+			}
+
+			// Detect and send any files created by Pi
+			const detectedFiles = await detectFiles(
+				result.output || "",
+				workspace,
+				beforeSnapshot,
+			);
+
+			for (const file of detectedFiles) {
+				try {
+					if (file.type === "photo") {
+						await ctx.replyWithPhoto(new InputFile(file.path), {
+							caption: file.filename,
+						});
+					} else {
+						await ctx.replyWithDocument(new InputFile(file.path), {
+							caption: file.filename,
+						});
+					}
+				} catch {
+					// File might have been deleted or inaccessible
+					await ctx.reply(`(Could not send file: ${file.filename})`);
 				}
 			}
 		} catch (err) {

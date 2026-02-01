@@ -188,7 +188,75 @@ describe("config", () => {
 				sessionDir: "/sessions",
 				thinkingLevel: "high",
 				allowedUsers: [123, 456],
+				rateLimitCooldownMs: 5000,
+				piTimeoutMs: 300000,
+				shellTimeoutMs: 60000,
+				sessionTitleTimeoutMs: 10000,
 			});
+		});
+
+		it("should use default rate limit cooldown of 5000ms", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			delete process.env.RATE_LIMIT_COOLDOWN_MS;
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.rateLimitCooldownMs).toBe(5000);
+		});
+
+		it("should use custom rate limit cooldown when set", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			process.env.RATE_LIMIT_COOLDOWN_MS = "10000";
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.rateLimitCooldownMs).toBe(10000);
+		});
+
+		it("should use default Pi timeout of 5 minutes", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			delete process.env.PI_TIMEOUT_MS;
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.piTimeoutMs).toBe(300000);
+		});
+
+		it("should use custom Pi timeout when set", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			process.env.PI_TIMEOUT_MS = "600000";
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.piTimeoutMs).toBe(600000);
+		});
+
+		it("should use default shell timeout of 60 seconds", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			delete process.env.SHELL_TIMEOUT_MS;
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.shellTimeoutMs).toBe(60000);
+		});
+
+		it("should use custom shell timeout when set", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			process.env.SHELL_TIMEOUT_MS = "120000";
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.shellTimeoutMs).toBe(120000);
+		});
+
+		it("should use default session title timeout of 10 seconds", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			delete process.env.SESSION_TITLE_TIMEOUT_MS;
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.sessionTitleTimeoutMs).toBe(10000);
+		});
+
+		it("should use custom session title timeout when set", async () => {
+			process.env.TELEGRAM_BOT_TOKEN = "test-token";
+			process.env.SESSION_TITLE_TIMEOUT_MS = "20000";
+			const { loadConfig } = await import("./config.js");
+			const config = loadConfig();
+			expect(config.sessionTitleTimeoutMs).toBe(20000);
 		});
 	});
 });

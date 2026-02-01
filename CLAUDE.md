@@ -85,6 +85,13 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 MINI_CLAW_WORKSPACE=/path/to/workspace  # Default: ~/mini-claw-workspace
 MINI_CLAW_SESSION_DIR=~/.mini-claw/sessions
 PI_THINKING_LEVEL=low                   # low | medium | high
+ALLOWED_USERS=123,456                   # Comma-separated user IDs (empty = allow all)
+
+# Rate Limiting & Timeouts (all in milliseconds)
+RATE_LIMIT_COOLDOWN_MS=5000             # Default: 5 seconds between messages
+PI_TIMEOUT_MS=300000                    # Default: 5 minutes
+SHELL_TIMEOUT_MS=60000                  # Default: 60 seconds
+SESSION_TITLE_TIMEOUT_MS=10000          # Default: 10 seconds
 ```
 
 ## Session Management

@@ -87,14 +87,11 @@ export async function runPi(
 				resolve({ output: "", error: `Failed to start Pi: ${err.message}` });
 			});
 
-			// Timeout after 5 minutes
-			setTimeout(
-				() => {
-					proc.kill("SIGTERM");
-					resolve({ output: stdout || "", error: "Timeout: Pi took too long" });
-				},
-				5 * 60 * 1000,
-			);
+			// Timeout
+			setTimeout(() => {
+				proc.kill("SIGTERM");
+				resolve({ output: stdout || "", error: "Timeout: Pi took too long" });
+			}, config.piTimeoutMs);
 		});
 	} finally {
 		release();

@@ -1,4 +1,4 @@
-.PHONY: install login dev start build status clean help
+.PHONY: install login dev start build status clean help test test-watch test-coverage lint typecheck check pw-install pw-dev pw-build
 
 # Default target
 help:
@@ -17,6 +17,17 @@ help:
 	@echo "  make build      Compile TypeScript"
 	@echo "  make status     Check Pi auth status"
 	@echo "  make clean      Remove build artifacts"
+	@echo ""
+	@echo "Quality:"
+	@echo "  make test       Run tests"
+	@echo "  make lint       Run ESLint"
+	@echo "  make typecheck  Run TypeScript type checking"
+	@echo "  make check      Run all checks (lint + typecheck + test)"
+	@echo ""
+	@echo "Playwright Skill:"
+	@echo "  make pw-install Install and link pw CLI globally"
+	@echo "  make pw-build   Build Playwright skill"
+	@echo "  make pw-dev     Start Playwright skill in dev mode"
 	@echo ""
 	@echo "Setup:"
 	@echo "  1. make install"
@@ -67,10 +78,32 @@ status:
 	@echo "Checking Pi auth..."
 	@pi --version 2>/dev/null && echo "Pi: OK" || echo "Pi: not authenticated or not working"
 
+# Run tests
+test:
+	pnpm test
+
+# Run tests in watch mode
+test-watch:
+	pnpm test:watch
+
+# Run tests with coverage
+test-coverage:
+	pnpm test:coverage
+
+# Run ESLint
+lint:
+	pnpm lint
+
+# Run TypeScript type checking
+typecheck:
+	pnpm typecheck
+
+# Run all checks
+check: lint typecheck test
+
 # Clean build artifacts
 clean:
-	rm -rf dist
-	rm -rf node_modules/.cache
+	@command -v rip > /dev/null 2>&1 && rip dist node_modules/.cache 2>/dev/null || rm -rf dist node_modules/.cache
 
 # Install systemd service (Linux)
 install-service:
@@ -94,3 +127,21 @@ install-service:
 	@echo "  systemctl --user daemon-reload"
 	@echo "  systemctl --user start mini-claw"
 	@echo "  systemctl --user enable mini-claw"
+
+# Playwright skill targets
+pw-install:
+	@echo "Installing Playwright skill..."
+	cd skills/playwright && pnpm install
+	@echo ""
+	@echo "Linking pw command globally..."
+	cd skills/playwright && pnpm link --global
+	@echo ""
+	@echo "Done! Test with: pw --help"
+
+pw-dev:
+	@echo "Starting Playwright skill in dev mode..."
+	cd skills/playwright && pnpm dev
+
+pw-build:
+	@echo "Building Playwright skill..."
+	cd skills/playwright && pnpm build

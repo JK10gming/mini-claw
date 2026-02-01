@@ -1,7 +1,115 @@
 import { spawn } from "node:child_process";
-import { readdir, readFile, rename, rm, stat } from "node:fs/promises";
-import { join } from "node:path";
+import {
+	copyFile,
+	readdir,
+	readFile,
+	rename,
+	rm,
+	stat,
+	writeFile,
+} from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import type { Config } from "./config.js";
+
+// Track active session per chat (default is telegram-<chatId>.jsonl)
+const ACTIVE_SESSIONS_FILE = join(
+	homedir(),
+	".mini-claw",
+	"active-sessions.json",
+);
+
+interface ActiveSessions {
+	[chatId: string]: string; // chatId -> session filename
+}
+
+let activeSessions: ActiveSessions = {};
+let activeSessionsLoaded = false;
+
+async function loadActiveSessions(): Promise<void> {
+	if (activeSessionsLoaded) return;
+	try {
+		const data = await readFile(ACTIVE_SESSIONS_FILE, "utf-8");
+		activeSessions = JSON.parse(data);
+	} catch {
+		activeSessions = {};
+	}
+	activeSessionsLoaded = true;
+}
+
+async function saveActiveSessions(): Promise<void> {
+	const dir = dirname(ACTIVE_SESSIONS_FILE);
+	const { mkdir } = await import("node:fs/promises");
+	await mkdir(dir, { recursive: true });
+	await writeFile(
+		ACTIVE_SESSIONS_FILE,
+		JSON.stringify(activeSessions, null, 2),
+	);
+}
+
+export function getDefaultSessionFilename(chatId: number): string {
+	return `telegram-${chatId}.jsonl`;
+}
+
+export async function getActiveSessionFilename(
+	chatId: number,
+): Promise<string> {
+	await loadActiveSessions();
+	return activeSessions[String(chatId)] || getDefaultSessionFilename(chatId);
+}
+
+export async function switchSession(
+	config: Config,
+	chatId: number,
+	targetFilename: string,
+): Promise<void> {
+	await loadActiveSessions();
+
+	const currentFilename = await getActiveSessionFilename(chatId);
+	const defaultFilename = getDefaultSessionFilename(chatId);
+
+	// If switching to the same session, do nothing
+	if (currentFilename === targetFilename) {
+		return;
+	}
+
+	const currentPath = join(config.sessionDir, currentFilename);
+	const targetPath = join(config.sessionDir, targetFilename);
+	const defaultPath = join(config.sessionDir, defaultFilename);
+
+	// Verify target exists
+	try {
+		await stat(targetPath);
+	} catch {
+		throw new Error(`Session not found: ${targetFilename}`);
+	}
+
+	// Archive current session if it exists and isn't already archived
+	try {
+		await stat(currentPath);
+		if (currentFilename === defaultFilename) {
+			// Current is the default session - archive it with timestamp
+			const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+			const archiveName = `telegram-${chatId}-${timestamp}.jsonl`;
+			const archivePath = join(config.sessionDir, archiveName);
+			await rename(currentPath, archivePath);
+		}
+	} catch {
+		// Current session doesn't exist, nothing to archive
+	}
+
+	// Copy target to default session path (Pi always uses default path)
+	await copyFile(targetPath, defaultPath);
+
+	// Update active session tracking
+	activeSessions[String(chatId)] = targetFilename;
+	await saveActiveSessions();
+}
+
+export function resetActiveSessionsForTesting(): void {
+	activeSessions = {};
+	activeSessionsLoaded = false;
+}
 
 export interface SessionInfo {
 	filename: string;
@@ -78,6 +186,7 @@ async function getFirstUserMessage(
 
 export async function generateSessionTitle(
 	sessionPath: string,
+	timeoutMs = 10000,
 ): Promise<string> {
 	const firstMessage = await getFirstUserMessage(sessionPath);
 	if (!firstMessage) {
@@ -109,12 +218,11 @@ export async function generateSessionTitle(
 			resolve(words.length > 30 ? `${words.slice(0, 30)}...` : words);
 		});
 
-		// Timeout after 10 seconds
 		setTimeout(() => {
 			proc.kill("SIGTERM");
 			const words = firstMessage.split(/\s+/).slice(0, 5).join(" ");
 			resolve(words.length > 30 ? `${words.slice(0, 30)}...` : words);
-		}, 10000);
+		}, timeoutMs);
 	});
 }
 

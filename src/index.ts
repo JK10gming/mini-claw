@@ -16,14 +16,14 @@ async function main() {
 	await mkdir(config.workspace, { recursive: true });
 	await mkdir(config.sessionDir, { recursive: true });
 
-	// Check Pi installation
+	// Check Pi installation (fatal if not available)
 	const piOk = await checkPiAuth();
 	if (!piOk) {
-		console.error("Warning: Pi is not installed or not authenticated.");
+		console.error("Error: Pi is not installed or not authenticated.");
 		console.error("Run 'pi /login' to authenticate with an AI provider.");
-	} else {
-		console.log("Pi: OK");
+		process.exit(1);
 	}
+	console.log("Pi: OK");
 
 	// Create and start bot
 	const bot = createBot(config);

@@ -19,11 +19,15 @@
 		"grammy": "^1.35.0"
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.39.2",
 		"@types/node": "^22.13.4",
 		"@vitest/coverage-v8": "^4.0.18",
+		"eslint": "^9.39.2",
+		"globals": "^17.2.0",
 		"memfs": "^4.56.10",
 		"tsx": "^4.19.2",
 		"typescript": "^5.7.3",
+		"typescript-eslint": "^8.54.0",
 		"vitest": "^4.0.18"
 	},
 	"engines": {

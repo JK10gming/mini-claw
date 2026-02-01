@@ -7,6 +7,12 @@ export interface Config {
 	sessionDir: string;
 	thinkingLevel: "low" | "medium" | "high";
 	allowedUsers: number[];
+	// Rate limiting
+	rateLimitCooldownMs: number;
+	// Timeouts
+	piTimeoutMs: number;
+	shellTimeoutMs: number;
+	sessionTitleTimeoutMs: number;
 }
 
 export function loadConfig(): Config {
@@ -36,11 +42,32 @@ export function loadConfig(): Config {
 				.filter((id) => !Number.isNaN(id))
 		: [];
 
+	// Rate limiting: default 5 seconds cooldown
+	const rateLimitCooldownMs = parseInt(
+		process.env.RATE_LIMIT_COOLDOWN_MS || "5000",
+		10,
+	);
+
+	// Timeouts: defaults are Pi=5min, Shell=60s, SessionTitle=10s
+	const piTimeoutMs = parseInt(
+		process.env.PI_TIMEOUT_MS || String(5 * 60 * 1000),
+		10,
+	);
+	const shellTimeoutMs = parseInt(process.env.SHELL_TIMEOUT_MS || "60000", 10);
+	const sessionTitleTimeoutMs = parseInt(
+		process.env.SESSION_TITLE_TIMEOUT_MS || "10000",
+		10,
+	);
+
 	return {
 		telegramToken: token,
 		workspace,
 		sessionDir,
 		thinkingLevel,
 		allowedUsers,
+		rateLimitCooldownMs,
+		piTimeoutMs,
+		shellTimeoutMs,
+		sessionTitleTimeoutMs,
 	};
 }
